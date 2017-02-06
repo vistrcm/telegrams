@@ -76,11 +76,3 @@ func (bot telegrambot) GetMe() (User, error) {
 
 	return user, nil
 }
-
-// set webhook to get messages
-func (bot telegrambot) SetWebhook(url string) {
-	// first unregister all webhooks
-	bot.request("setWebhook", nil)
-	// now register readl webhook url
-	bot.request("setWebhook", nil)
-}
