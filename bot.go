@@ -59,9 +59,9 @@ func (bot telegrambot) request(path string, params url.Values) (APIResponse, err
 	return apiResp, nil
 }
 
+// A simple method for testing your bot's auth token.
 func (bot telegrambot) GetMe() (User, error) {
 	resp, err := bot.request("getMe", nil)
-
 	if err != nil {
 		return User{}, err
 	}
@@ -75,4 +75,21 @@ func (bot telegrambot) GetMe() (User, error) {
 	}
 
 	return user, nil
+}
+
+// Use this method to send text messages. On success, the sent Message is returned.
+func (bot telegrambot) SendMessage(to, text string) (Message, error) {
+	resp, err := bot.request("sendMessage", url.Values{"chat_id": {to}, "text": {text}})
+	if err != nil {
+		return Message{}, err
+	}
+
+	var message Message
+	err = json.Unmarshal(resp.Result, &message)
+
+	if err != nil {
+		log.Printf("something happened during unmarshall: %v.\n", err)
+		return Message{}, err
+	}
+	return message, nil
 }
