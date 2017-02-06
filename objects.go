@@ -1,14 +1,17 @@
 package telegrams
 
-type abstractAPIResponse struct {
+import "encoding/json"
+
+type APIResponse struct {
 	Ok          bool               `json:"ok"`
 	Description string             `json:"description"`
 	ErrorCode   int                `json:"error_code"`
 	Parameters  ResponseParameters `json:"ResponseParameters"`
+	Result      json.RawMessage    `json:"result"`
 }
 
 type UserAPIResponse struct {
-	abstractAPIResponse
+	APIResponse
 	Result User `json:"result"`
 }
 
