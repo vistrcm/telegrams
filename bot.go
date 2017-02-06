@@ -1,17 +1,19 @@
 package telegrams
 
 import (
-	"strings"
-	"net/http"
-	"time"
-	"log"
-	"io/ioutil"
 	"encoding/json"
+	"errors"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"net/url"
+	"strings"
+	"time"
 )
 
 type telegrambot struct {
-	baseUrl string
-	token   string
+	baseUrl    string
+	token      string
 	httpClient *http.Client
 }
 
@@ -27,47 +29,58 @@ func NewTelegramBot(token string) telegrambot {
 	return telegrambot
 }
 
-func (bot telegrambot)request(path string) *http.Response {
+func (bot telegrambot) request(path string, params url.Values) (APIResponse, error) {
 	trimmedPath := strings.Trim(path, "/") // remove '/' from method
 	url := bot.baseUrl + "/" + trimmedPath
 
-	req, err := http.NewRequest("GET", url, nil)
+	resp, err := bot.httpClient.PostForm(url, params)
 	if err != nil {
-		log.Panicf("Error happened %v, req: %v", err, req)
+		return APIResponse{}, err
 	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := bot.httpClient.Do(req)
-	if err != nil {
-		log.Panicf("error on sending request: %v, resp: %v", err, resp)
-	}
-	return resp
-}
-
-func (bot telegrambot) GetMe() User {
-	resp := bot.request("getMe")
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	bytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Panicf("error on reading: %v. body: %v", err, body)
+		return APIResponse{}, err
 	}
 
-	var apiResp UserAPIResponse
-	err = json.Unmarshal(body, &apiResp)
+	var apiResp APIResponse
+	err = json.Unmarshal(bytes, &apiResp)
+
 	if err != nil {
-		log.Panicf("something happened during unmarshall: %v. engineers: %v", err, apiResp)
+		log.Printf("something happened during unmarshall: %v.\n", err)
+		return APIResponse{}, err
 	}
 
-	if ! apiResp.Ok {
-		log.Panicf("API Response is not ok. %+v", apiResp)
+	if !apiResp.Ok {
+		return APIResponse{}, errors.New(apiResp.Description)
 	}
-	return apiResp.Result
+
+	return apiResp, nil
+}
+
+func (bot telegrambot) GetMe() (User, error) {
+	resp, err := bot.request("getMe", nil)
+
+	if err != nil {
+		return User{}, err
+	}
+
+	var user User
+	err = json.Unmarshal(resp.Result, &user)
+
+	if err != nil {
+		log.Printf("something happened during unmarshall: %v.\n", err)
+		return User{}, err
+	}
+
+	return user, nil
 }
 
 // set webhook to get messages
-func (bot telegrambot) SetWebhook(url string){
+func (bot telegrambot) SetWebhook(url string) {
 	// first unregister all webhooks
-	bot.request("setWebhook")
+	bot.request("setWebhook", nil)
 	// now register readl webhook url
-	bot.request("setWebhook")
+	bot.request("setWebhook", nil)
 }
