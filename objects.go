@@ -1,6 +1,6 @@
 package telegrams
 
-type AbstractAPIResponse struct {
+type abstractAPIResponse struct {
 	Ok          bool               `json:"ok"`
 	Description string             `json:"description"`
 	ErrorCode   int                `json:"error_code"`
@@ -8,7 +8,8 @@ type AbstractAPIResponse struct {
 }
 
 type UserAPIResponse struct {
-	Ok bool `json:"ok"`
+	abstractAPIResponse
+	Result User `json:"result"`
 }
 
 // This object represents an incoming update.
